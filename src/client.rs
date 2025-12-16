@@ -6,11 +6,27 @@ use std::time::Duration;
 use crossterm::event::{poll, read, Event, KeyCode};
 use str;
 
+struct Rect{
+    x : u16, y : u16, w : u16, h : u16
+}
+
+fn chat_window(stdout: &mut impl Write, chat: &[String], boundary : Rect){
+    let n = chat.len();
+    let m = n.checked_sub(boundary.h as usize).unwrap_or(0);
+    for (row, line) in chat.iter().skip(m).enumerate() {
+        stdout.queue(cursor::MoveTo(boundary.x, boundary.y + row as u16)).unwrap();
+        let bytes = line.as_bytes();
+        stdout.write(bytes.get(0..boundary.w as usize).unwrap_or(bytes)).unwrap();    
+    }
+    
+}
+
 fn main(){
     let mut stdout = stdout();
+    
     let _ = terminal::enable_raw_mode();
     let  (mut _width, mut height) = terminal::size().unwrap();
-    stdout.queue(terminal::Clear(ClearType::FromCursorUp)).unwrap();
+    stdout.queue(terminal::Clear(ClearType::All)).unwrap();
     let mut bar = str::repeat("⎯", _width as usize);
     let mut prompt = String::new();
     let mut quit = false;
@@ -42,10 +58,11 @@ fn main(){
 			    stdout.write(clearline.as_bytes()).unwrap();
 			}
 			KeyCode::Backspace => {
+                let space = str::repeat(" ", _width as usize);
 			    prompt.pop();
 			    stdout.queue(cursor::MoveTo(0, height-1)).unwrap();
-
-			    stdout.write(prompt.as_bytes()).unwrap();
+                stdout.write(space.as_bytes()).unwrap();
+			    //stdout.write(prompt.as_bytes()).unwrap();
 			}
 			_ => {},
 		    }
@@ -54,10 +71,12 @@ fn main(){
 	    }
 	}
 	//render_frame();
-	for (row, line) in chat.iter().enumerate() {
-	    stdout.queue(cursor::MoveTo(0,row as u16)).unwrap();
-	    stdout.write(line.as_bytes()).unwrap();
-	}
+	chat_window(&mut stdout, &chat, Rect {
+            x : 0,
+            y : 0,
+            w : _width,
+            h : height-1
+        });
 	stdout.queue(cursor::MoveTo(0, height-2)).unwrap();
 	stdout.write(bar.as_bytes()).unwrap();
 	stdout.queue(cursor::MoveTo(0, height-1)).unwrap();
