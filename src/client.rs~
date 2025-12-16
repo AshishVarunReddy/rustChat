@@ -1,0 +1,37 @@
+use std::io::{Write, stdout};
+use crossterm::{QueueableCommand, cursor};
+use std::thread;
+use crossterm::terminal::{self, Clear, ClearType};
+use std::time::Duration;
+use crossterm::event::{poll, read, Event};
+
+
+fn main(){
+    let  (mut _width, mut height) = terminal::size().unwrap();
+    loop{
+	while poll(Duration::ZERO).unwrap(){
+	    
+	    match read().unwrap() {
+		Event::Resize(nw, nh) => {
+		    _width = nw;
+		    height = nh;
+		},
+		Event::Key(event) => {
+		    
+		},
+		_ => {},
+	    }
+	}
+	//render_frame();
+	break;
+    }
+    println!("Hello from client");
+    
+    let mut stdout = stdout();
+    let label = b"UrMom";
+    stdout.queue(terminal::Clear(ClearType::FromCursorUp)).unwrap();
+    stdout.queue(cursor::MoveTo(_width/2-label.len() as u16/2, height/2)).unwrap();
+    stdout.write(label).unwrap();
+    stdout.flush().unwrap();
+    thread::sleep(Duration::from_secs(1));
+}
